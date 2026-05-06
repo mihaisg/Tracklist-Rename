@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracklist Merger</title>
+    <style>
+        /* Modern Color Palette & Variables */
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --error: #ef4444;
+            --warning: #d97706;
+            --success: #059669;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        /* Clean Card Layout */
+        .container {
+            background: var(--surface);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            border: 1px solid var(--border);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Form Inputs */
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        /* Custom File Input Styling */
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            background-color: var(--bg);
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: var(--primary);
+            background-color: #f1f5f9;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-right: 12px;
+            color: var(--text-main);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background: var(--bg);
+        }
+
+        /* Professional Button */
+        button.merge-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+
+        button.merge-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        button.merge-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Status Messages inside the UI */
+        #status {
+            margin-top: 20px;
+            font-size: 0.875rem;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .status-error { background: #fef2f2; color: var(--error); border: 1px solid #fecaca; }
+        .status-warning { background: #fffbeb; color: var(--warning); border: 1px solid #fde68a; }
+        .status-success { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Tracklist Merger</h2>
+        <p>Combine two tracklist files into one file</p>
+	<p>Best is to be used with the <b>Bulk Rename Utility</b></p>
+    </div>
+
+    <div class="input-group">
+        <label for="fileA">Original Tracklist File (File A):</label>
+        <input type="file" id="fileA" accept=".txt">
+    </div>
+    
+    <div class="input-group">
+        <label for="fileB">Edited Tracklist File (File B):</label>
+        <input type="file" id="fileB" accept=".txt">
+    </div>
+    
+    <button class="merge-btn" onclick="processFiles()">Merge and Download</button>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    function showStatus(message, type) {
+        const statusBox = document.getElementById('status');
+        statusBox.textContent = message;
+        statusBox.className = `status-${type}`;
+        statusBox.style.display = 'block';
+    }
+
+    async function processFiles() {
+        const fileA = document.getElementById('fileA').files[0];
+        const fileB = document.getElementById('fileB').files[0];
+        const statusBox = document.getElementById('status');
+        
+        statusBox.style.display = 'none'; // Reset status on new click
+
+        if (!fileA || !fileB) {
+            showStatus("Please upload both File A and File B.", "error");
+            return;
+        }
+
+        try {
+            const textA = await fileA.text();
+            const textB = await fileB.text();
+
+            const linesA = textA.split(/\r?\n/).filter(line => line.trim() !== "");
+            const linesB = textB.split(/\r?\n/).filter(line => line.trim() !== "");
+
+            let warningMsg = "";
+            if (linesA.length !== linesB.length) {
+                warningMsg = `Warning: Files have different lengths (${linesA.length} vs ${linesB.length} lines). Merged up to the shortest file.`;
+            }
+
+            let output = "";
+            const rowCount = Math.min(linesA.length, linesB.length);
+
+            for (let i = 0; i < rowCount; i++) {
+                output += `${linesA[i]}|${linesB[i]}.mp3\n`;
+            }
+
+            downloadResult(output);
+
+            if (warningMsg) {
+                showStatus(warningMsg, "Warning");
+            } else {
+                showStatus("Success! Your tracklist have been merged and downloaded.", "Success");
+            }
+            
+        } catch (error) {
+            showStatus("An error occurred while reading the files.", "Error");
+        }
+    }
+
+    function downloadResult(content) {
+        const element = document.createElement('a');
+        const file = new Blob([content], {type: 'text/plain'});
+        element.href = URL.createObjectURL(file);
+        element.download = "Output.txt";
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    }
+</script>
+
+</body>
+</html>
